@@ -11,3 +11,5 @@ Fonctionnalités:
 -Analyse des métadonnées 
 
 -Analyse des fichiers musicaux (Essentia) -> suggestion "vous pourriez aimer"(LastFM)
+
+-Récupération des fichiers du système dans une BDD et faire les mises à jours à l'aide d'un daemon
