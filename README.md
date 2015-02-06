@@ -2,6 +2,8 @@ Medium - file indexer
 
 Langage: C++
 
+Gestion des tickets via Trello: https://trello.com/b/8Kfkl8Xw/medium-file-indexer
+
 Base du projet: Un explorateur de fichiers
 
 Fonctionnalités:
