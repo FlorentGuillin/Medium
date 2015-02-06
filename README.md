@@ -1,5 +1,7 @@
 Medium - file indexer
 
+Langage: C++
+
 Base du projet: Un explorateur de fichiers
 
 Fonctionnalités:
