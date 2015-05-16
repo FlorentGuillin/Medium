@@ -6,49 +6,79 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>483</width>
-    <height>496</height>
+    <width>898</width>
+    <height>689</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Medium</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="1">
-     <widget class="QPushButton" name="pushButton">
-      <property name="text">
-       <string>OK</string>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="0">
-     <widget class="QLineEdit" name="pathLineEdit"/>
+    <item row="1" column="1">
+     <layout class="QGridLayout" name="bookmarkLayout">
+      <item row="0" column="0">
+       <widget class="QLineEdit" name="filter_lineEdit"/>
+      </item>
+      <item row="0" column="1">
+       <widget class="QPushButton" name="filterButton">
+        <property name="text">
+         <string>Filtrer</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0" colspan="2">
+       <widget class="QListWidget" name="bookmark_listWidget"/>
+      </item>
+     </layout>
     </item>
     <item row="1" column="0">
-     <widget class="QTreeView" name="fsTreeView"/>
+     <layout class="QGridLayout" name="explorerLayout">
+      <item row="0" column="0">
+       <widget class="QLabel" name="pathLine">
+        <property name="maximumSize">
+         <size>
+          <width>300</width>
+          <height>300</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>TextLabel</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QPushButton" name="changeDirButton">
+        <property name="text">
+         <string>Changer</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QPushButton" name="parentDirButton">
+        <property name="text">
+         <string>Dossier parent</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0" rowspan="2">
+       <widget class="QTreeView" name="fsTreeView"/>
+      </item>
+     </layout>
     </item>
    </layout>
   </widget>
+  <widget class="QStatusBar" name="statusBar"/>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>483</width>
+     <width>898</width>
      <height>25</height>
     </rect>
    </property>
   </widget>
-  <widget class="QToolBar" name="mainToolBar">
-   <attribute name="toolBarArea">
-    <enum>TopToolBarArea</enum>
-   </attribute>
-   <attribute name="toolBarBreak">
-    <bool>false</bool>
-   </attribute>
-  </widget>
-  <widget class="QStatusBar" name="statusBar"/>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>
