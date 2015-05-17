@@ -17,18 +17,53 @@
    <layout class="QGridLayout" name="gridLayout">
     <item row="1" column="1">
      <layout class="QGridLayout" name="bookmarkLayout">
-      <item row="0" column="0">
+      <item row="5" column="0" colspan="2">
+       <widget class="QLabel" name="bookmarkSearchName_label">
+        <property name="text">
+         <string>Nom du bookmark :</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
        <widget class="QLineEdit" name="filter_lineEdit"/>
       </item>
-      <item row="0" column="1">
+      <item row="2" column="1">
        <widget class="QPushButton" name="filterButton">
         <property name="text">
          <string>Filtrer</string>
         </property>
        </widget>
       </item>
-      <item row="2" column="0" colspan="2">
+      <item row="6" column="0" colspan="2">
+       <widget class="QLabel" name="bookmarkSearchDirectory_label">
+        <property name="text">
+         <string>Répertoire :</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0" colspan="2">
        <widget class="QListWidget" name="bookmark_listWidget"/>
+      </item>
+      <item row="8" column="0">
+       <widget class="QPushButton" name="updateBookmark_pushButton">
+        <property name="text">
+         <string>Mettre à jour</string>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="1">
+       <widget class="QPushButton" name="deleteBookmark_pushButton">
+        <property name="text">
+         <string>Supprimer</string>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="0" colspan="2">
+       <widget class="QLabel" name="bookmarkFilter_label">
+        <property name="text">
+         <string>Filtre de recherche :</string>
+        </property>
+       </widget>
       </item>
      </layout>
     </item>
@@ -63,6 +98,34 @@
       </item>
       <item row="1" column="0" rowspan="2">
        <widget class="QTreeView" name="fsTreeView"/>
+      </item>
+     </layout>
+    </item>
+    <item row="1" column="5" colspan="3">
+     <layout class="QGridLayout" name="file_gridLayout">
+      <item row="3" column="1">
+       <widget class="QPushButton" name="openFile_pushButton">
+        <property name="text">
+         <string>Ouvrir</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="2">
+       <widget class="QPushButton" name="deleteFile_pushButton">
+        <property name="text">
+         <string>Retirer</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1" colspan="2">
+       <widget class="QLabel" name="labelFilename">
+        <property name="text">
+         <string>Nom du fichier : </string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1" colspan="2">
+       <widget class="QTreeView" name="file_treeView"/>
       </item>
      </layout>
     </item>

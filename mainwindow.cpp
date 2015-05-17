@@ -1,5 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "bookmarklistwidgetitem.h"
+#include "filetreemodel.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -17,7 +19,11 @@ MainWindow::MainWindow(QWidget *parent) :
     //Cache la colonne DateModified, ça prend de la place pour rien?
     ui->fsTreeView->hideColumn(3);
     curr_dir = new QDir("/");
+    ui->deleteBookmark_pushButton->setEnabled(false);
     displayDir("/");
+
+    ftm = new FileTreeModel(QList<QStringList>());
+    ui->file_treeView->setModel(ftm);
 }
 
 MainWindow::~MainWindow()
@@ -64,10 +70,47 @@ void MainWindow::displayBookmarks() {
     if(q->exec("SELECT * FROM bookmark")) {
         QIcon bookmark_icon = QIcon(":/icons/icons/bookmark.png");
         while(q->next()) {
-            QListWidgetItem *qlwi = new QListWidgetItem(bookmark_icon, q->value(3).toString(), ui->bookmark_listWidget);
+            BookmarkListWidgetItem *blwi = new BookmarkListWidgetItem(ui->bookmark_listWidget);
+            blwi->setBookmarkId(q->value(0).toInt());
+            blwi->setFilter(q->value(1).toString());
+            blwi->setSearchDirectory(q->value(2).toString());
+            blwi->setSearchName(q->value(3).toString());
+            blwi->setIcon(bookmark_icon);
+            blwi->setText(blwi->getSearchName());
         }
     } else {
         QMessageBox::warning(this, "Erreur de récupération des bookmarks", " Medium n'a pas réussi à récupérer les bookmarks : \n\"" %
+                              q->lastError().driverText() %
+                              " : " %
+                              q->lastError().databaseText() %
+                              (q->lastError().nativeErrorCode().isEmpty() ? "" : " : " + q->lastError().nativeErrorCode()));
+    }
+}
+
+//Affiche les bookmarks de l'utilisateur
+void MainWindow::displayFiles(int bookmark_id) {
+
+    //Récupération des bookmarks
+    QSqlQuery *q = new QSqlQuery(db);
+    q->setForwardOnly(true);
+
+    if(q->exec("SELECT * FROM file WHERE bookmark_id_fk = '" % QString::number(bookmark_id) % "'")) {
+
+        QList<QStringList> files = QList<QStringList>();
+        while(q->next()) {
+            QStringList file = QStringList();
+            file.append(q->value(0).toString());
+            file.append(q->value(1).toString());
+            file.append(q->value(2).toString());
+            file.append(q->value(3).toString());
+            files.append(file);
+        }
+
+        ftm->destroyed();
+        ftm = new FileTreeModel(files);
+        ui->file_treeView->setModel(ftm);
+    } else {
+        QMessageBox::warning(this, "Erreur de récupération des fichiers", " Medium n'a pas réussi à récupérer la liste des fichiers associés à votre bookmark : \n\"" %
                               q->lastError().driverText() %
                               " : " %
                               q->lastError().databaseText() %
@@ -82,7 +125,7 @@ bool MainWindow::connectSQLite() {
     if((res = db.open())) {
         QSqlQuery q;
         if((res = q.exec("CREATE TABLE IF NOT EXISTS bookmark (bookmark_id INTEGER PRIMARY KEY AUTOINCREMENT, filter TEXT, search_directory TEXT, search_name TEXT)"))) {
-            if((res = q.exec("CREATE TABLE IF NOT EXISTS file (file_id INTEGER PRIMARY KEY AUTOINCREMENT, bookmark_id_fk INTEGER, file_path TEXT, FOREIGN KEY(bookmark_id_fk) REFERENCES bookmark(bookmark_id))"))) {
+            if((res = q.exec("CREATE TABLE IF NOT EXISTS file (file_id INTEGER PRIMARY KEY AUTOINCREMENT, bookmark_id_fk INTEGER, file_path TEXT, file_type TEXT, FOREIGN KEY(bookmark_id_fk) REFERENCES bookmark(bookmark_id))"))) {
 
             } else {
                 QMessageBox::critical(this, "Erreur de création de table", " Medium n'a pas réussi à créer la table File : \n\"" %
@@ -137,7 +180,8 @@ void MainWindow::on_parentDirButton_clicked()
     displayDir(s);
 }
 
-QFileInfoList MainWindow::getAllFilesRecursively(QDir* dir){
+//Renvoie la liste des dossiers ou fichiers qui peuvent être analysés par Medium en fonction du type MIME pour les fichiers
+QFileInfoList MainWindow::getAllFilesRecursively(QDir* dir, QString search_filter){
     QFileInfoList res = QFileInfoList();
 
     QStringList name_filter = QStringList("*");
@@ -146,10 +190,15 @@ QFileInfoList MainWindow::getAllFilesRecursively(QDir* dir){
     QMimeDatabase qmd;
 
     foreach (QFileInfo file, files){
-        if (file.isDir()){
-            res.append(getAllFilesRecursively(new QDir(file.filePath())));
-
+        //Si l'élément courant est un dossier et contient un des termes de recherche, on l'ajoute à la liste (on suppose que le dossier et son contenu convient à l'utilisateur)
+        //Exemple: si la recherche est "facture" et qu'il y a un dossier facture, on garde tout son contenu de manière récursive, si le choix n'est pas pertinent, l'utilisateur pourra de toute manière supprimer le dossier
+        if (file.isDir() && file.fileName().contains(QRegularExpression(search_filter))){
+            res.append(file);
+        // L'élément est un dossier dont le nom n'a rien à voir avec la recherche, du coup, on ajoute tous les fichiers qu'il contient à la liste pour les tester individuellement par la suite
+        } else if (file.isDir() && !file.fileName().contains(QRegularExpression(search_filter))) {
+            res.append(getAllFilesRecursively(new QDir(file.filePath()), search_filter));
         }else{
+            // On teste le type MIME des fichiers pour savoir si on peut traiter le fichier ou non avec nos algorithmes
             QString mimetype = qmd.mimeTypeForFile(file).name();
             if(mimetype.contains(QRegularExpression("text/"))) {
                 res.append(file);
@@ -165,13 +214,12 @@ void MainWindow::on_filterButton_clicked()
     QString search_filter = ui->filter_lineEdit->text();
     if(!search_filter.isEmpty()) {
         //Récupération de tous les fichiers contenu sous le répertoire courant
-        QFileInfoList files = getAllFilesRecursively(curr_dir);
+        QFileInfoList files = getAllFilesRecursively(curr_dir, search_filter);
+        QMimeDatabase qmd;
         foreach(QFileInfo file, files) {
 
             //Récupération du MIME Type pour savoir si on traite ou pas le fichier
-            QMimeDatabase qmd;
             QString mimetype = qmd.mimeTypeForFile(file).name();
-
             //Teste si le fichier ou son nom contient le critère de recherche à l'aide de grep dans les fichiers textes
             //TODO: Tester si cette manière de procéder est cross-platform tout de même, j'ai des gros doutes #Windaube
             if(mimetype.contains(QRegularExpression("text/"))) {
@@ -195,14 +243,14 @@ void MainWindow::on_filterButton_clicked()
             if(q.exec("INSERT INTO bookmark (filter, search_directory, search_name) VALUES ( \"" % search_filter %"\", \"" % curr_dir->absolutePath() % "\", \"" % search_filter % "\" )")) {
                 QString lastBookmarkId = q.lastInsertId().toString();
                 foreach (QFileInfo file, files) {
-                    if(q.exec("INSERT INTO file (bookmark_id_fk, file_path) VALUES ( " % lastBookmarkId % ", \"" % file.filePath() % "\")")) {
+                    QString file_type = qmd.mimeTypeForFile(file).name();
+                    if(q.exec("INSERT INTO file (bookmark_id_fk, file_path, file_type) VALUES ( " % lastBookmarkId % ", \"" % file.filePath() % "\", \"" % file_type % "\")")) {
                     } else {
                         QMessageBox::warning(this, "Erreur avec la BDD lors de la création d'un bookmark", "Medium n'a pas réussi à créer un file dans la base de donnée : \n\"" %
                                              q.lastError().driverText() %
                                              " : " %
                                              q.lastError().databaseText() %
                                              (q.lastError().nativeErrorCode().isEmpty() ? "" : " : " + q.lastError().nativeErrorCode()));
-                        //break;
                     }
                 }
 
@@ -221,4 +269,55 @@ void MainWindow::on_filterButton_clicked()
         QMessageBox::information(this, "Recherche vide", "Veuillez saisir au moins un caractère pour effectuer une recherche.");
     }
     displayBookmarks();
+}
+
+void MainWindow::on_bookmark_listWidget_clicked(const QModelIndex &index)
+{
+    BookmarkListWidgetItem *blwi = (BookmarkListWidgetItem *) ui->bookmark_listWidget->currentItem();
+    ui->bookmarkSearchName_label->setText("Nom du bookmark : " % blwi->getSearchName());
+    ui->bookmarkSearchDirectory_label->setToolTip(blwi->getSearchDirectory());
+    ui->bookmarkSearchDirectory_label->setText("Répertoire : " % QDir(blwi->getSearchDirectory()).dirName());
+    ui->bookmarkFilter_label->setText("Filtre de recherche : " % blwi->getFilter());
+    ui->deleteBookmark_pushButton->setEnabled(true);
+    displayFiles(blwi->getBookmarkId());
+}
+
+void MainWindow::on_deleteBookmark_pushButton_clicked()
+{
+    BookmarkListWidgetItem *blwi = (BookmarkListWidgetItem *) ui->bookmark_listWidget->currentItem();
+    QSqlQuery *q = new QSqlQuery(db);
+    if(q->exec("DELETE FROM file WHERE bookmark_id_fk = '" % QString::number(blwi->getBookmarkId()) % "'")) {
+        if(q->exec("DELETE FROM bookmark WHERE bookmark_id = '" % QString::number(blwi->getBookmarkId()) % "'")) {
+            displayBookmarks();
+            ui->deleteBookmark_pushButton->setEnabled(false);
+            ui->bookmarkSearchName_label->setText("Nom du bookmark : ");
+            ui->bookmarkSearchDirectory_label->setToolTip("");
+            ui->bookmarkSearchDirectory_label->setText("Répertoire : ");
+            ui->bookmarkFilter_label->setText("Filtre de recherche : ");
+
+            ftm->destroyed();
+            ftm = new FileTreeModel(QList<QStringList>());
+            ui->file_treeView->setModel(ftm);
+        } else {
+            QMessageBox::warning(this, "Erreur de suppression du bookmark", " Medium n'a pas réussi à supprimer votre bookmark : \n\"" %
+                                  q->lastError().driverText() %
+                                  " : " %
+                                  q->lastError().databaseText() %
+                                  (q->lastError().nativeErrorCode().isEmpty() ? "" : " : " + q->lastError().nativeErrorCode()));
+        }
+    } else {
+        QMessageBox::warning(this, "Erreur de suppression des fichiers", " Medium n'a pas réussi à supprimer la liste des fichiers associés à votre bookmark : \n\"" %
+                              q->lastError().driverText() %
+                              " : " %
+                              q->lastError().databaseText() %
+                              (q->lastError().nativeErrorCode().isEmpty() ? "" : " : " + q->lastError().nativeErrorCode()));
+    }
+}
+
+void MainWindow::on_file_treeView_clicked(const QModelIndex &index)
+{
+    /*QStandardItemModel *qsim = (QStandardItemModel *) ui->file_treeView->model();
+    FileStandardItem *fsi =(FileStandardItem *) qsim->itemFromIndex(index);
+    qDebug() << fsi->getFilePath();*/
+    //ui->file_treeView->model()->itemFromIndex(index);
 }

@@ -13,9 +13,15 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        mainwindow.cpp
+        mainwindow.cpp \
+    bookmarklistwidgetitem.cpp \
+    filetreeitem.cpp \
+    filetreemodel.cpp
 
-HEADERS  += mainwindow.h
+HEADERS  += mainwindow.h \
+    bookmarklistwidgetitem.h \
+    filetreeitem.h \
+    filetreemodel.h
 
 FORMS    += mainwindow.ui
 
