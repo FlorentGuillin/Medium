@@ -16,15 +16,19 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     bookmarklistwidgetitem.cpp \
     filetreeitem.cpp \
-    filetreemodel.cpp
+    filetreemodel.cpp \
+    imagemetadata.cpp
 
 HEADERS  += mainwindow.h \
     bookmarklistwidgetitem.h \
     filetreeitem.h \
-    filetreemodel.h
+    filetreemodel.h \
+    imagemetadata.h
 
 FORMS    += mainwindow.ui
 
 RESOURCES     = medium.qrc
 
 ICON = ./icons/medium-icon.icns
+
+unix:!macx: LIBS += -lexiv2
