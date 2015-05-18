@@ -1,8 +1,12 @@
 #include "imagemetadata.h"
 #include <cassert>
 
+
+#include <QStringList>
+#include <QList>
+
 using namespace Exiv2;
-// todo class wqui cherche le type d'image et si c'est une image (à faire pas ici faire nouvelle classe)
+
 ImageMetadata::ImageMetadata()
 {
     has_edata = false;
@@ -41,7 +45,6 @@ bool ImageMetadata::loadData(QString path)
     ExifData exifData = image->exifData();
     if (!exifData.empty())
     {
-        std::cerr<<"has e data"<<std::endl;
         has_edata = true;
         loadExifTags(exifData);
         metadata_found = true;
@@ -168,7 +171,6 @@ QMap<QString,QString>* ImageMetadata::regexSearchKey(QRegExp regex)
 QMap<QString,QString>* ImageMetadata::regexSearchValue(QRegExp regex)
 {
     QMap<QString,QString> *ret_value = new QMap<QString,QString>;
-    std::cerr<<has_edata<<std::endl;
 
     if(has_edata)
     {
@@ -220,4 +222,23 @@ bool ImageMetadata::hasIptcTags() const
 bool ImageMetadata::hasXmpTags() const
 {
     return has_xdata;
+}
+bool ImageMetadata::regexSearchPerKey(QRegExp key_reg,QRegExp value_reg)
+{
+    if(has_edata || has_idata || has_xdata)
+    {
+        QMap<QString,QString> *per_key_search = regexSearchKey(key_reg);
+        for(QMap<QString,QString>::iterator it = per_key_search->begin();
+            it != per_key_search->end();
+            it++)
+        {
+            if(value_reg.indexIn(it.value())!= -1)
+            {
+                delete per_key_search;
+                return true;
+            }
+        }
+        delete per_key_search;
+    }
+    return false;
 }
