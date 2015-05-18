@@ -1,0 +1,11 @@
+prefix=/home/killingtree/Cours/2A/S4/BDM/Medium/exiv2
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: exiv2
+Description: Image metadata library and tools
+Version: 0.24
+Libs: -L${libdir} -lexiv2 
+Libs.private:    -lz  -lm -lexpat
+Cflags: -I${includedir}

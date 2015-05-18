@@ -31,4 +31,7 @@ RESOURCES     = medium.qrc
 
 ICON = ./icons/medium-icon.icns
 
-unix:!macx: LIBS += -lexiv2
+unix:!macx: LIBS += -L$$PWD/exiv2/lib/ -lexiv2
+
+INCLUDEPATH += $$PWD/exiv2/include
+DEPENDPATH += $$PWD/exiv2/include
