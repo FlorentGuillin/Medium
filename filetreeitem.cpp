@@ -7,6 +7,16 @@ FileTreeItem::FileTreeItem(const QList<QVariant> &data, FileTreeItem *parent)
     m_itemData = data;
 }
 
+FileTreeItem::FileTreeItem(const QList<QVariant> &data, FileTreeItem *parent, QString file_id, QString bookmark_id, QString file_path, QString file_type)
+{
+    m_parentItem = parent;
+    m_itemData = data;
+    setFileId(file_id);
+    setBookMarkIdFk(bookmark_id);
+    setFilePath(file_path);
+    setFileType(file_type);
+}
+
 FileTreeItem::~FileTreeItem()
 {
     qDeleteAll(m_childItems);

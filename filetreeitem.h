@@ -3,12 +3,13 @@
 
 #include <QList>
 #include <QVariant>
+#include <QStandardItem>
 
-
-class FileTreeItem
+class FileTreeItem : public QStandardItem
 {
 public:
     explicit FileTreeItem(const QList<QVariant> &data, FileTreeItem *parentItem = 0);
+    explicit FileTreeItem(const QList<QVariant> &data, FileTreeItem *parent, QString file_id, QString bookmark_id, QString file_path, QString file_type);
     ~FileTreeItem();
 
     void appendChild(FileTreeItem *child);
