@@ -3,6 +3,9 @@
 
 #include <QStringList>
 #include <QFileInfo>
+#include <QDir>
+#include <QDebug>
+#include <QMimeDatabase>
 
 FileTreeModel::FileTreeModel(const QList<QStringList> &data, QObject *parent)
     : QAbstractItemModel(parent)
@@ -111,14 +114,49 @@ void FileTreeModel::setupModelData(const QList<QStringList> &files, FileTreeItem
     QList<FileTreeItem*> parents;
     parents << parent;
     foreach(QStringList file, files) {
-        QList<QVariant> columnData;
-        columnData << QFileInfo(file[2]).baseName();
-        columnData << file[3];
-        FileTreeItem *fti = new FileTreeItem(columnData, parents.last());
-        fti->setFileId(file[0]);
-        fti->setBookMarkIdFk(file[1]);
-        fti->setFilePath(file[2]);
-        fti->setFileType(file[3]);
-        rootItem->appendChild(fti);
+        //Si le fichier courant est un dossier, on crée un sous-arbre intégrant son contenu
+        if(file[3].contains("inode/directory")) {
+            rootItem->appendChild(createDirectorySubTree(file, parents.last()));
+        } else {
+            //On ajoute un fichier à la racine
+            QList<QVariant> columnData;
+            columnData << QFileInfo(file[2]).baseName();
+            columnData << file[3];
+            FileTreeItem *fti = new FileTreeItem(columnData, parents.last(), file[0], file[1], file[2], file[3]);
+            fti->setIcon(QIcon(":/icons/icons/bookmark.png"));
+            rootItem->appendChild(fti);
+        }
     }
+}
+
+
+FileTreeItem* FileTreeModel::createDirectorySubTree(QStringList file, FileTreeItem *parent) {
+    QList<QVariant> columnData;
+    columnData << QFileInfo(file[2]).baseName();
+    columnData << file[3];
+    FileTreeItem* subTreeRoot = new FileTreeItem(columnData, parent, file[0], file[1], file[2], file[3]);
+    QDir *dir = new QDir(file[2]);
+    QStringList name_filter = QStringList("*");
+    QFileInfoList files = dir->entryInfoList(name_filter, QDir::NoDotAndDotDot | QDir::Dirs | QDir::Files);
+    QMimeDatabase qmd;
+    foreach(QFileInfo file_from_dir, files) {
+        QString mimetype = qmd.mimeTypeForFile(file_from_dir).name();
+        if (mimetype.contains("inode/directory")) {
+            QStringList sub_dir;
+            //Pas d'id de fichier
+            sub_dir.append("");
+            //Pas d'id de bookmark
+            sub_dir.append("");
+            sub_dir.append(file_from_dir.absoluteFilePath());
+            sub_dir.append(mimetype);
+            subTreeRoot->appendChild(createDirectorySubTree(sub_dir, subTreeRoot));
+        } else if(!mimetype.contains("x-trash")) {
+            columnData.clear();
+            columnData << file_from_dir.baseName();
+            columnData << mimetype;
+            FileTreeItem* node = new FileTreeItem(columnData, subTreeRoot, "", "", file_from_dir.baseName(), mimetype);
+            subTreeRoot->appendChild(node);
+        }
+    }
+    return subTreeRoot;
 }
