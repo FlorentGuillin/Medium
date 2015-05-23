@@ -1,0 +1,11 @@
+prefix=/home/killingtree/Cours/2A/S4/BDM/Medium/taglib
+exec_prefix=/home/killingtree/Cours/2A/S4/BDM/Medium/taglib
+libdir=/home/killingtree/Cours/2A/S4/BDM/Medium/taglib/lib
+includedir=/home/killingtree/Cours/2A/S4/BDM/Medium/taglib/include
+
+Name: TagLib
+Description: Audio meta-data library
+Requires: 
+Version: 1.9.1
+Libs: -L/home/killingtree/Cours/2A/S4/BDM/Medium/taglib/lib -ltag
+Cflags: -I/home/killingtree/Cours/2A/S4/BDM/Medium/taglib/include/taglib 
