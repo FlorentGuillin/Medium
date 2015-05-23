@@ -18,6 +18,8 @@ public:
     bool hasIptcTags()const;
     bool hasXmpTags() const;
     bool regexSearchPerKey(QRegExp key_reg,QRegExp value_reg);
+    bool regexHasKey(QRegExp regex);
+    bool regexHasValue(QRegExp regex);
     QMap<QString,QString>* regexSearchKey(QRegExp regex);
     QMap<QString,QString>* regexSearchValue(QRegExp regex);
 

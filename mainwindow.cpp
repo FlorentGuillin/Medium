@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include "bookmarklistwidgetitem.h"
 #include "filetreemodel.h"
+#include "imagemetadata.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -192,15 +193,15 @@ QFileInfoList MainWindow::getAllFilesRecursively(QDir* dir, QString search_filte
     foreach (QFileInfo file, files){
         //Si l'élément courant est un dossier et contient un des termes de recherche, on l'ajoute à la liste (on suppose que le dossier et son contenu convient à l'utilisateur)
         //Exemple: si la recherche est "facture" et qu'il y a un dossier facture, on garde tout son contenu de manière récursive, si le choix n'est pas pertinent, l'utilisateur pourra de toute manière supprimer le dossier
-        if (file.isDir() && file.fileName().contains(QRegularExpression(search_filter))){
+        if (file.isDir() && file.fileName().contains(QRegularExpression(search_filter, QRegularExpression::CaseInsensitiveOption))){
             res.append(file);
         // L'élément est un dossier dont le nom n'a rien à voir avec la recherche, du coup, on ajoute tous les fichiers qu'il contient à la liste pour les tester individuellement par la suite
-        } else if (file.isDir() && !file.fileName().contains(QRegularExpression(search_filter))) {
+        } else if (file.isDir() && !file.fileName().contains(QRegularExpression(search_filter, QRegularExpression::CaseInsensitiveOption))) {
             res.append(getAllFilesRecursively(new QDir(file.filePath()), search_filter));
         }else{
             // On teste le type MIME des fichiers pour savoir si on peut traiter le fichier ou non avec nos algorithmes
             QString mimetype = qmd.mimeTypeForFile(file).name();
-            if(mimetype.contains(QRegularExpression("text/"))) {
+            if(mimetype.contains(QRegularExpression("(text/|image/jpeg)"))) {
                 res.append(file);
             }
         }
@@ -231,6 +232,12 @@ void MainWindow::on_filterButton_clicked()
 
                 //Si le grep renvoie une chaîne vide ET que le nom du fichier ne comporte pas le critère de recherche, le fichier est retiré de la liste
                 if(process->readAll().isEmpty() && !file.fileName().contains(QRegularExpression(search_filter))){
+                    files.removeAll(file);
+                }
+            } else if(mimetype.contains(QRegularExpression("image/jpeg"))) {
+                ImageMetadata * image = new ImageMetadata(file.filePath());
+                if(!image->regexHasValue(QRegExp(search_filter))) {
+                    qDebug() << "Metadata de l'image: " << file.fileName();
                     files.removeAll(file);
                 }
             }

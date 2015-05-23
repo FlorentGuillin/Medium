@@ -4,6 +4,7 @@
 
 #include <QStringList>
 #include <QList>
+#include <QDebug>
 
 using namespace Exiv2;
 
@@ -83,7 +84,6 @@ bool ImageMetadata::loadData(QString path)
 void ImageMetadata::loadExifTags(ExifData e_data)
 {
     ex_mdata_map = new QMap<QString,QString>;
-
     if(has_edata)
     {
         for(ExifData::iterator it = e_data.begin(); it != e_data.end(); ++it)
@@ -97,7 +97,6 @@ void ImageMetadata::loadExifTags(ExifData e_data)
 void ImageMetadata::loadIptcTags(IptcData i_data)
 {
     ip_mdata_map = new QMap<QString,QString>;
-
     if(has_idata)
     {
         for(IptcData::iterator it = i_data.begin(); it != i_data.end(); ++it)
@@ -111,7 +110,6 @@ void ImageMetadata::loadIptcTags(IptcData i_data)
 void ImageMetadata::loadXmpData(XmpData x_data)
 {
     xm_mdata_map = new QMap<QString,QString>;
-
     if(has_xdata)
     {
         for(XmpData::iterator it = x_data.begin(); it != x_data.end(); ++it)
@@ -241,4 +239,96 @@ bool ImageMetadata::regexSearchPerKey(QRegExp key_reg,QRegExp value_reg)
         delete per_key_search;
     }
     return false;
+}
+
+bool ImageMetadata::regexHasKey(QRegExp regex) {
+    bool ret_value = false;
+
+    if(has_edata)
+    {
+        for(QMap<QString,QString>::iterator it = ex_mdata_map->begin();
+            it != ex_mdata_map->end();
+            it++)
+        {
+            if(regex.indexIn(it.key()) !=-1)
+            {
+                ret_value = true;
+                break;
+            }
+        }
+    }
+    if(has_idata && !ret_value)
+    {
+        for(QMap<QString,QString>::iterator it = ip_mdata_map->begin();
+            it != ip_mdata_map->end();
+            it++)
+        {
+            if(regex.indexIn(it.key()) !=-1)
+            {
+                ret_value = true;
+                break;
+            }
+        }
+    }
+    if(has_xdata && !ret_value)
+    {
+        for(QMap<QString,QString>::iterator it = xm_mdata_map->begin();
+            it != xm_mdata_map->end();
+            it++)
+        {
+            if(regex.indexIn(it.key()) !=-1)
+            {
+                ret_value = true;
+                break;
+            }
+        }
+    }
+
+    return ret_value;
+}
+
+bool ImageMetadata::regexHasValue(QRegExp regex) {
+    bool ret_value = false;
+
+        if(has_edata)
+        {
+            for(QMap<QString,QString>::iterator it = ex_mdata_map->begin();
+                it != ex_mdata_map->end();
+                it++)
+            {
+                if(regex.indexIn(it.value()) !=-1)
+                {
+                    ret_value = true;
+                    break;
+                }
+            }
+        }
+        if(has_idata && !ret_value)
+        {
+            for(QMap<QString,QString>::iterator it = ip_mdata_map->begin();
+                it != ip_mdata_map->end();
+                it++)
+            {
+                if(regex.indexIn(it.value()) !=-1)
+                {
+                    ret_value = true;
+                    break;
+                }
+            }
+        }
+        if(has_xdata && !ret_value)
+        {
+            for(QMap<QString,QString>::iterator it = xm_mdata_map->begin();
+                it != xm_mdata_map->end();
+                it++)
+            {
+                if(regex.indexIn(it.value()) !=-1)
+                {
+                    ret_value = true;
+                    break;
+                }
+            }
+        }
+
+        return ret_value;
 }

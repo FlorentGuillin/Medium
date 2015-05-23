@@ -34,7 +34,10 @@ QVariant FileTreeModel::data(const QModelIndex &index, int role) const
     if (!index.isValid())
         return QVariant();
 
-    if (role != Qt::DisplayRole)
+    /*if(role != Qt::DecorationRole && index.column() == 0)
+        return QVariant();*/
+
+    if(role != Qt::DisplayRole)
         return QVariant();
 
     FileTreeItem *item = static_cast<FileTreeItem*>(index.internalPointer());
