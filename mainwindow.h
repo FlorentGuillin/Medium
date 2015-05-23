@@ -10,6 +10,11 @@
 #include <QMessageBox>
 #include <QStringBuilder>
 #include "filetreemodel.h"
+#include <QTextStream>
+#include "ui_mainwindow.h"
+#include "bookmarklistwidgetitem.h"
+#include "imagemetadata.h"
+#include "audiometadata.h"
 
 namespace Ui {
 class MainWindow;

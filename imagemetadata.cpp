@@ -4,7 +4,6 @@
 
 #include <QStringList>
 #include <QList>
-#include <QDebug>
 
 using namespace Exiv2;
 

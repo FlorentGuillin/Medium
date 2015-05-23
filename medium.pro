@@ -39,3 +39,8 @@ INCLUDEPATH += $$PWD/exiv2/include
 DEPENDPATH += $$PWD/exiv2/include
 
 unix|win32: LIBS += -ltag
+
+unix: LIBS += -L$$PWD/taglib/lib/ -ltag
+
+INCLUDEPATH += $$PWD/taglib/include
+DEPENDPATH += $$PWD/taglib/include

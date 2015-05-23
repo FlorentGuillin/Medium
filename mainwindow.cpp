@@ -1,8 +1,4 @@
 #include "mainwindow.h"
-#include "ui_mainwindow.h"
-#include "bookmarklistwidgetitem.h"
-#include "filetreemodel.h"
-#include "imagemetadata.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -19,9 +15,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->fsTreeView->hideColumn(2);
     //Cache la colonne DateModified, ça prend de la place pour rien?
     ui->fsTreeView->hideColumn(3);
-    curr_dir = new QDir("/");
+    curr_dir = new QDir(QDir::homePath());
     ui->deleteBookmark_pushButton->setEnabled(false);
-    displayDir("/");
+    displayDir(QDir::homePath());
 
     ftm = new FileTreeModel(QList<QStringList>());
     ui->file_treeView->setModel(ftm);
@@ -201,7 +197,7 @@ QFileInfoList MainWindow::getAllFilesRecursively(QDir* dir, QString search_filte
         }else{
             // On teste le type MIME des fichiers pour savoir si on peut traiter le fichier ou non avec nos algorithmes
             QString mimetype = qmd.mimeTypeForFile(file).name();
-            if(mimetype.contains(QRegularExpression("(text/|image/jpeg)"))) {
+            if(mimetype.contains(QRegularExpression("(text/|image/|audio/)"))) {
                 res.append(file);
             }
         }
@@ -217,28 +213,44 @@ void MainWindow::on_filterButton_clicked()
         //Récupération de tous les fichiers contenu sous le répertoire courant
         QFileInfoList files = getAllFilesRecursively(curr_dir, search_filter);
         QMimeDatabase qmd;
+        QRegExp regexp_filter = QRegExp(search_filter);
+        regexp_filter.setCaseSensitivity(Qt::CaseInsensitive);
         foreach(QFileInfo file, files) {
+            if(!file.fileName().contains(regexp_filter)) {
+                //Récupération du MIME Type pour savoir si on traite ou pas le fichier
+                QString mimetype = qmd.mimeTypeForFile(file).name();
+                if(mimetype.contains(QRegularExpression("text/"))) {
 
-            //Récupération du MIME Type pour savoir si on traite ou pas le fichier
-            QString mimetype = qmd.mimeTypeForFile(file).name();
-            //Teste si le fichier ou son nom contient le critère de recherche à l'aide de grep dans les fichiers textes
-            //TODO: Tester si cette manière de procéder est cross-platform tout de même, j'ai des gros doutes #Windaube
-            if(mimetype.contains(QRegularExpression("text/"))) {
+                    bool isMatch = false;
+                    QFile text_file(file.absoluteFilePath());
+                    if (text_file.open(QIODevice::ReadOnly | QIODevice::Text))
+                    {
+                        QTextStream stream(&text_file);
+                        while(!stream.atEnd()) {
+                            QString line = stream.readLine();
+                            if((isMatch = line.contains(regexp_filter))) {
+                                break;
+                            } else {
+                            }
+                        }
+                    }
+                    text_file.close();
 
-                QProcess *process = new QProcess;
-                process->start("bash", QStringList() << "-c" << "cat " + file.filePath()  + " | grep " + search_filter);
-                process->waitForBytesWritten();
-                process->waitForFinished();
+                    if(!isMatch) {
+                        files.removeAll(file);
+                    }
 
-                //Si le grep renvoie une chaîne vide ET que le nom du fichier ne comporte pas le critère de recherche, le fichier est retiré de la liste
-                if(process->readAll().isEmpty() && !file.fileName().contains(QRegularExpression(search_filter))){
-                    files.removeAll(file);
-                }
-            } else if(mimetype.contains(QRegularExpression("image/jpeg"))) {
-                ImageMetadata * image = new ImageMetadata(file.filePath());
-                if(!image->regexHasValue(QRegExp(search_filter))) {
-                    qDebug() << "Metadata de l'image: " << file.fileName();
-                    files.removeAll(file);
+                } else if(mimetype.contains(QRegularExpression("image/"))) {
+                    ImageMetadata * image = new ImageMetadata(file.filePath());
+                    if(!image->regexHasValue(regexp_filter)) {
+                        files.removeAll(file);
+                    }
+                } else if(mimetype.contains(QRegularExpression("audio/"))) {
+                    AudioMetadata * audio = new AudioMetadata(file.filePath());
+                    if(!audio->isValue(regexp_filter)) {
+                        files.removeAll(file);
+                    }
+
                 }
             }
         }
