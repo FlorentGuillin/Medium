@@ -17,13 +17,15 @@ SOURCES += main.cpp\
     bookmarklistwidgetitem.cpp \
     filetreeitem.cpp \
     filetreemodel.cpp \
-    imagemetadata.cpp
+    imagemetadata.cpp \
+    audiometadata.cpp
 
 HEADERS  += mainwindow.h \
     bookmarklistwidgetitem.h \
     filetreeitem.h \
     filetreemodel.h \
-    imagemetadata.h
+    imagemetadata.h \
+    audiometadata.h
 
 FORMS    += mainwindow.ui
 
@@ -35,3 +37,5 @@ unix:!macx: LIBS += -L$$PWD/exiv2/lib/ -lexiv2
 
 INCLUDEPATH += $$PWD/exiv2/include
 DEPENDPATH += $$PWD/exiv2/include
+
+unix|win32: LIBS += -ltag
