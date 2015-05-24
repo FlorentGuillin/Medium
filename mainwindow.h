@@ -32,7 +32,7 @@ public:
     void displayFiles(int bookmark_id);
     QDir *getIndexPath(const QModelIndex &index);
     bool connectSQLite();
-    QFileInfoList getAllFilesRecursively(QDir* dir, QString search_filter);
+    QFileInfoList getAllFilesRecursively(QDir* dir, QRegExp search_filter);
 
 private slots:
     void on_changeDirButton_clicked();
@@ -55,8 +55,8 @@ private:
     QFileSystemModel *fs_model;
     FileTreeModel *ftm;
     QDir *curr_dir;//le repertoire courant
-
     QSqlDatabase db; //lien vers la base SQLite
+    QRegExp buildSearchRegExp(QString search_filter);
 };
 
 #endif // MAINWINDOW_H

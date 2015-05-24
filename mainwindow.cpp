@@ -178,7 +178,7 @@ void MainWindow::on_parentDirButton_clicked()
 }
 
 //Renvoie la liste des dossiers ou fichiers qui peuvent être analysés par Medium en fonction du type MIME pour les fichiers
-QFileInfoList MainWindow::getAllFilesRecursively(QDir* dir, QString search_filter){
+QFileInfoList MainWindow::getAllFilesRecursively(QDir* dir, QRegExp regexp_filter){
     QFileInfoList res = QFileInfoList();
 
     QStringList name_filter = QStringList("*");
@@ -189,11 +189,11 @@ QFileInfoList MainWindow::getAllFilesRecursively(QDir* dir, QString search_filte
     foreach (QFileInfo file, files){
         //Si l'élément courant est un dossier et contient un des termes de recherche, on l'ajoute à la liste (on suppose que le dossier et son contenu convient à l'utilisateur)
         //Exemple: si la recherche est "facture" et qu'il y a un dossier facture, on garde tout son contenu de manière récursive, si le choix n'est pas pertinent, l'utilisateur pourra de toute manière supprimer le dossier
-        if (file.isDir() && file.fileName().contains(QRegularExpression(search_filter, QRegularExpression::CaseInsensitiveOption))){
+        if (file.isDir() && file.fileName().contains(regexp_filter)){
             res.append(file);
         // L'élément est un dossier dont le nom n'a rien à voir avec la recherche, du coup, on ajoute tous les fichiers qu'il contient à la liste pour les tester individuellement par la suite
-        } else if (file.isDir() && !file.fileName().contains(QRegularExpression(search_filter, QRegularExpression::CaseInsensitiveOption))) {
-            res.append(getAllFilesRecursively(new QDir(file.filePath()), search_filter));
+        } else if (file.isDir() && !file.fileName().contains(regexp_filter)) {
+            res.append(getAllFilesRecursively(new QDir(file.filePath()), regexp_filter));
         }else{
             // On teste le type MIME des fichiers pour savoir si on peut traiter le fichier ou non avec nos algorithmes
             QString mimetype = qmd.mimeTypeForFile(file).name();
@@ -210,80 +210,80 @@ void MainWindow::on_filterButton_clicked()
 {
     QString search_filter = ui->filter_lineEdit->text();
     if(!search_filter.isEmpty()) {
-        //Récupération de tous les fichiers contenu sous le répertoire courant
-        QFileInfoList files = getAllFilesRecursively(curr_dir, search_filter);
-        QMimeDatabase qmd;
-        QRegExp regexp_filter = QRegExp(search_filter);
-        regexp_filter.setCaseSensitivity(Qt::CaseInsensitive);
-        foreach(QFileInfo file, files) {
-            if(!file.fileName().contains(regexp_filter)) {
-                //Récupération du MIME Type pour savoir si on traite ou pas le fichier
-                QString mimetype = qmd.mimeTypeForFile(file).name();
-                if(mimetype.contains(QRegularExpression("text/"))) {
+        QRegExp regexp_filter = buildSearchRegExp(search_filter);
+        if(regexp_filter.pattern() != "--Invalid QRegExp because filter--") {
+            //Récupération de tous les fichiers contenu sous le répertoire courant
+            QFileInfoList files = getAllFilesRecursively(curr_dir, regexp_filter);
+            QMimeDatabase qmd;
+            foreach(QFileInfo file, files) {
+                if(!file.fileName().contains(regexp_filter)) {
+                    //Récupération du MIME Type pour savoir si on traite ou pas le fichier
+                    QString mimetype = qmd.mimeTypeForFile(file).name();
+                    if(mimetype.contains(QRegularExpression("text/"))) {
 
-                    bool isMatch = false;
-                    QFile text_file(file.absoluteFilePath());
-                    if (text_file.open(QIODevice::ReadOnly | QIODevice::Text))
-                    {
-                        QTextStream stream(&text_file);
-                        while(!stream.atEnd()) {
-                            QString line = stream.readLine();
-                            if((isMatch = line.contains(regexp_filter))) {
-                                break;
-                            } else {
+                        bool isMatch = false;
+                        QFile text_file(file.absoluteFilePath());
+                        if (text_file.open(QIODevice::ReadOnly | QIODevice::Text))
+                        {
+                            QTextStream stream(&text_file);
+                            while(!stream.atEnd()) {
+                                QString line = stream.readLine();
+                                if((isMatch = line.contains(regexp_filter))) {
+                                    break;
+                                } else {
+                                }
                             }
                         }
-                    }
-                    text_file.close();
+                        text_file.close();
 
-                    if(!isMatch) {
-                        files.removeAll(file);
-                    }
+                        if(!isMatch) {
+                            files.removeAll(file);
+                        }
 
-                } else if(mimetype.contains(QRegularExpression("image/"))) {
-                    ImageMetadata * image = new ImageMetadata(file.filePath());
-                    if(!image->regexHasValue(regexp_filter)) {
-                        files.removeAll(file);
-                    }
-                } else if(mimetype.contains(QRegularExpression("audio/"))) {
-                    AudioMetadata * audio = new AudioMetadata(file.filePath());
-                    if(!audio->isValue(regexp_filter)) {
-                        files.removeAll(file);
-                    }
+                    } else if(mimetype.contains(QRegularExpression("image/"))) {
+                        ImageMetadata * image = new ImageMetadata(file.filePath());
+                        if(!image->regexHasValue(regexp_filter)) {
+                            files.removeAll(file);
+                        }
+                    } else if(mimetype.contains(QRegularExpression("audio/"))) {
+                        AudioMetadata * audio = new AudioMetadata(file.filePath());
+                        if(!audio->isValue(regexp_filter)) {
+                            files.removeAll(file);
+                        }
 
+                    }
                 }
             }
-        }
 
-        //La liste de fichier n'est pas vide donc on procède à la création d'un bookmark
-        if(!files.isEmpty()) {
-            QSqlQuery q;
-            //TODO: Pour le moment filter = search_name, on permettra à l'utilisateur de nommer sa recherche
-            if(q.exec("INSERT INTO bookmark (filter, search_directory, search_name) VALUES ( \"" % search_filter %"\", \"" % curr_dir->absolutePath() % "\", \"" % search_filter % "\" )")) {
-                QString lastBookmarkId = q.lastInsertId().toString();
-                foreach (QFileInfo file, files) {
-                    QString file_type = qmd.mimeTypeForFile(file).name();
-                    if(q.exec("INSERT INTO file (bookmark_id_fk, file_path, file_type) VALUES ( " % lastBookmarkId % ", \"" % file.filePath() % "\", \"" % file_type % "\")")) {
-                    } else {
-                        QMessageBox::warning(this, "Erreur avec la BDD lors de la création d'un bookmark", "Medium n'a pas réussi à créer un file dans la base de donnée : \n\"" %
-                                             q.lastError().driverText() %
-                                             " : " %
-                                             q.lastError().databaseText() %
-                                             (q.lastError().nativeErrorCode().isEmpty() ? "" : " : " + q.lastError().nativeErrorCode()));
+            //La liste de fichier n'est pas vide donc on procède à la création d'un bookmark
+            if(!files.isEmpty()) {
+                QSqlQuery q;
+                //TODO: Pour le moment filter = search_name, on permettra à l'utilisateur de nommer sa recherche
+                if(q.exec("INSERT INTO bookmark (filter, search_directory, search_name) VALUES ( \"" % search_filter %"\", \"" % curr_dir->absolutePath() % "\", \"" % search_filter % "\" )")) {
+                    QString lastBookmarkId = q.lastInsertId().toString();
+                    foreach (QFileInfo file, files) {
+                        QString file_type = qmd.mimeTypeForFile(file).name();
+                        if(q.exec("INSERT INTO file (bookmark_id_fk, file_path, file_type) VALUES ( " % lastBookmarkId % ", \"" % file.filePath() % "\", \"" % file_type % "\")")) {
+                        } else {
+                            QMessageBox::warning(this, "Erreur avec la BDD lors de la création d'un bookmark", "Medium n'a pas réussi à créer un file dans la base de donnée : \n\"" %
+                                                 q.lastError().driverText() %
+                                                 " : " %
+                                                 q.lastError().databaseText() %
+                                                 (q.lastError().nativeErrorCode().isEmpty() ? "" : " : " + q.lastError().nativeErrorCode()));
+                        }
                     }
-                }
 
+                } else {
+                   QMessageBox::warning(this, "Erreur avec la BDD lors de la création d'un bookmark", "Medium n'a pas réussi à créer un bookmark dans la base de donnée : \n\"" %
+                                        q.lastError().driverText() %
+                                        " : " %
+                                        q.lastError().databaseText() %
+                                        (q.lastError().nativeErrorCode().isEmpty() ? "" : " : " + q.lastError().nativeErrorCode()));
+                }
             } else {
-               QMessageBox::warning(this, "Erreur avec la BDD lors de la création d'un bookmark", "Medium n'a pas réussi à créer un bookmark dans la base de donnée : \n\"" %
-                                    q.lastError().driverText() %
-                                    " : " %
-                                    q.lastError().databaseText() %
-                                    (q.lastError().nativeErrorCode().isEmpty() ? "" : " : " + q.lastError().nativeErrorCode()));
+                QMessageBox::information(this, "Aucun résultat", "Désolé mais le filtre choisi ne donne aucun résultat.");
             }
-        } else {
-            QMessageBox::information(this, "Aucun résultat", "Désolé mais le filtre choisi ne donne aucun résultat.");
         }
-
     } else {
         QMessageBox::information(this, "Recherche vide", "Veuillez saisir au moins un caractère pour effectuer une recherche.");
     }
@@ -339,4 +339,102 @@ void MainWindow::on_file_treeView_clicked(const QModelIndex &index)
     FileStandardItem *fsi =(FileStandardItem *) qsim->itemFromIndex(index);
     qDebug() << fsi->getFilePath();*/
     //ui->file_treeView->model()->itemFromIndex(index);
+}
+
+QRegExp MainWindow::buildSearchRegExp(QString search_filter){
+    QString string_regexp = "";
+    QString string_no_parentheses = "";
+    bool filterIsValid = true;
+    search_filter = search_filter.replace(" ", "");
+    //Section de découpage des parenthèses
+    int pos = -1;
+    int openingPar = 0;
+    int pos_last_good_couple = 0;
+    for(int i = 0; i < search_filter.length(); i++) {
+        if(search_filter.at(i) == '(' && openingPar == 0) { //On trouve une première parenthèse ouvrante (ou une nouvelle depuis un groupe bien parenthésée
+            openingPar++;
+            pos = i;
+        } else if (search_filter.at(i) == '(' && openingPar > 0) { //On trouve une parenthèse ouvrante se trouvant après une autre parenthèse ouvrante qui n'est pas refermée
+            openingPar++;
+        } else if (search_filter.at(i) == ')' && openingPar == 1) { //On trouve une parenthèse fermante qui cloture un sous-groupe.
+            openingPar--;
+            if(pos_last_good_couple == 0) {
+                string_no_parentheses.append(search_filter.mid(pos_last_good_couple, (pos-pos_last_good_couple)) + buildSearchRegExp(search_filter.mid(pos+1, (i-pos-1))).pattern());
+            } else {
+                string_no_parentheses.append(search_filter.mid((pos_last_good_couple+1), (pos-pos_last_good_couple-1)) + buildSearchRegExp(search_filter.mid(pos+1, (i-pos-1))).pattern());
+            }
+            pos_last_good_couple = i;
+        } else if (search_filter.at(i) == ')' && openingPar > 1) { //On trouve une parenthèse fermante qui forme un couple compris dans un autre couple de parenthèse
+            openingPar--;
+        } else if (search_filter.at(i) == ')' && openingPar < 1) { //On trouve une parenthèse fermante sans parenthèse ouvrante, expression invalide
+            filterIsValid = false;
+            pos = i;
+            break;
+        }
+    }
+
+    if(pos == -1) {
+        string_no_parentheses = search_filter;
+    } else if(pos_last_good_couple != (search_filter.length() - 1)) {
+        string_no_parentheses.append(search_filter.right((search_filter.length()- pos_last_good_couple - 1)));
+    }
+
+    if(filterIsValid) {
+        //On coupe les AND
+        QStringList string_no_and = string_no_parentheses.split("-AND-");
+        if(string_no_and.count() > 1){
+            //On analyse chaque opérande de AND
+            foreach(QString and_op, string_no_and) {
+                if(and_op != ""){
+                    //On regarde s'il y a des OR dedans
+                    QStringList string_no_or = and_op.split("-OR-");
+                    //Il y en a un si la liste a plus de 1 élément
+                    QString or_ok = "";
+                    if(string_no_or.count() > 1) {
+                        //On construit le bout de regexp associé
+                        or_ok.append('(');
+                        foreach(QString or_op, string_no_or) {
+                            if(or_op != "") {
+                                or_ok.append(or_op + "|");
+                            }
+                        }
+                        //Suppresion du dernier pipe
+                        or_ok = or_ok.left(or_ok.length()-1);
+                        or_ok.append(')');
+                    }
+                    if(or_ok == "") {
+                        string_regexp.append("(?=.*" + and_op + ")");
+                    } else {
+                        string_regexp.append("(?=.*" + or_ok + ")");
+                    }
+                }
+            }
+        } else {
+            //On regarde s'il y a des OR dedans
+            QStringList string_no_or = string_no_parentheses.split("-OR-");
+            //Il y en a un si la liste a plus de 1 élément
+            QString or_ok = "";
+            if(string_no_or.count() > 1) {
+                //On construit le bout de regexp associé
+                or_ok.append('(');
+                foreach(QString or_op, string_no_or) {
+                    if(or_op != "") {
+                        or_ok.append(or_op + "|");
+                    }
+                }
+                //Suppresion du dernier pipe
+                or_ok = or_ok.left(or_ok.length()-1);
+                or_ok.append(')');
+                string_regexp = or_ok;
+            } else {
+                string_regexp = search_filter;
+            }
+        }
+        QRegExp regexp_filter = QRegExp(string_regexp);
+        regexp_filter.setCaseSensitivity(Qt::CaseInsensitive);
+        return regexp_filter;
+    } else {
+        QMessageBox::warning(this, "Erreur dans le parenthésage de votre filtre", " ')' (pos : " % QString::number(pos) % ") dans le filtre n'est associé à aucune ')'.");
+        return QRegExp("--Invalid QRegExp because filter--");
+    }
 }
