@@ -18,14 +18,16 @@ SOURCES += main.cpp\
     filetreeitem.cpp \
     filetreemodel.cpp \
     imagemetadata.cpp \
-    audiometadata.cpp
+    audiometadata.cpp\
+    pdfmetadata.cpp
 
 HEADERS  += mainwindow.h \
     bookmarklistwidgetitem.h \
     filetreeitem.h \
     filetreemodel.h \
     imagemetadata.h \
-    audiometadata.h
+    audiometadata.h\
+    pdfmetadata.h
 
 FORMS    += mainwindow.ui
 
@@ -44,3 +46,12 @@ unix: LIBS += -L$$PWD/taglib/lib/ -ltag
 
 INCLUDEPATH += $$PWD/taglib/include
 DEPENDPATH += $$PWD/taglib/include
+
+unix:!macx: LIBS += -L$$PWD/PoDoFo/lib/ -lpodofo
+unix:!macx:LIBS += -lz
+unix:!macx:LIBS += -lfreetype -ljpeg -lfontconfig
+
+INCLUDEPATH += $$PWD/PoDoFo/include
+DEPENDPATH += $$PWD/PoDoFo/include
+
+unix:!macx: PRE_TARGETDEPS += $$PWD/PoDoFo/lib/libpodofo.a
