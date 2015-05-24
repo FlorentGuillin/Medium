@@ -15,19 +15,17 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     bookmarklistwidgetitem.cpp \
-    filetreeitem.cpp \
-    filetreemodel.cpp \
     imagemetadata.cpp \
     audiometadata.cpp\
-    pdfmetadata.cpp
+    pdfmetadata.cpp \
+    filetreewidgetitem.cpp
 
 HEADERS  += mainwindow.h \
     bookmarklistwidgetitem.h \
-    filetreeitem.h \
-    filetreemodel.h \
     imagemetadata.h \
     audiometadata.h\
-    pdfmetadata.h
+    pdfmetadata.h \
+    filetreewidgetitem.h
 
 FORMS    += mainwindow.ui
 

@@ -1,5 +1,10 @@
 <RCC>
     <qresource prefix="/icons">
         <file>icons/bookmark.png</file>
+        <file>icons/folder.png</file>
+        <file>icons/text.png</file>
+        <file>icons/picture.png</file>
+        <file>icons/pdf.png</file>
+        <file>icons/music.png</file>
     </qresource>
 </RCC>

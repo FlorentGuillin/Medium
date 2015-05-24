@@ -19,8 +19,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->deleteBookmark_pushButton->setEnabled(false);
     displayDir(QDir::homePath());
 
-    ftm = new FileTreeModel(QList<QStringList>());
-    ui->file_treeView->setModel(ftm);
+    ui->file_treeWidget->setColumnCount(2);
+    ui->file_treeWidget->setHeaderLabels(QStringList() << "Nom du fichier" << "Type du fichier");
 }
 
 MainWindow::~MainWindow()
@@ -87,25 +87,43 @@ void MainWindow::displayBookmarks() {
 //Affiche les bookmarks de l'utilisateur
 void MainWindow::displayFiles(int bookmark_id) {
 
+    ui->file_treeWidget->clear();
+    ui->file_treeWidget->setIconSize(QSize(32,32));
+
     //Récupération des bookmarks
     QSqlQuery *q = new QSqlQuery(db);
     q->setForwardOnly(true);
 
     if(q->exec("SELECT * FROM file WHERE bookmark_id_fk = '" % QString::number(bookmark_id) % "'")) {
+        QIcon text_icon = QIcon(":/icons/icons/text.png");
+        QIcon picture_icon = QIcon(":/icons/icons/picture.png");
+        QIcon music_icon = QIcon(":/icons/icons/music.png");
+        QIcon pdf_icon = QIcon(":/icons/icons/pdf.png");
+        QIcon folder_icon = QIcon(":/icons/icons/folder.png");
 
-        QList<QStringList> files = QList<QStringList>();
         while(q->next()) {
-            QStringList file = QStringList();
-            file.append(q->value(0).toString());
-            file.append(q->value(1).toString());
-            file.append(q->value(2).toString());
-            file.append(q->value(3).toString());
-            files.append(file);
+            FileTreeWidgetItem *treeItem = new FileTreeWidgetItem(ui->file_treeWidget);
+            treeItem->setFileId(q->value(0).toString());
+            treeItem->setBookMarkIdFk(q->value(1).toString());
+            treeItem->setFilePath(q->value(2).toString());
+            treeItem->setFileType(q->value(3).toString());
+            treeItem->setText(0, QFileInfo(treeItem->getFilePath()).baseName());
+            treeItem->setText(1, treeItem->getFileType());
+            treeItem->setToolTip(0, treeItem->getFilePath());
+            if(treeItem->getFileType().contains(QRegExp("text/"))) {
+                treeItem->setIcon(1, text_icon);
+            } else if (treeItem->getFileType().contains(QRegExp("image/"))) {
+                treeItem->setIcon(1, picture_icon);
+            } else if (treeItem->getFileType().contains(QRegExp("audio/"))) {
+                treeItem->setIcon(1, music_icon);
+            } else if (treeItem->getFileType().contains(QRegExp("inode/directory"))) {
+                treeItem->setIcon(1, folder_icon);
+                treeItem->createDirectorySubTree(treeItem);
+            } else if (treeItem->getFileType().contains(QRegExp("/pdf"))) {
+                treeItem->setIcon(1, pdf_icon);
+            }
         }
 
-        ftm->destroyed();
-        ftm = new FileTreeModel(files);
-        ui->file_treeView->setModel(ftm);
     } else {
         QMessageBox::warning(this, "Erreur de récupération des fichiers", " Medium n'a pas réussi à récupérer la liste des fichiers associés à votre bookmark : \n\"" %
                               q->lastError().driverText() %
@@ -197,7 +215,7 @@ QFileInfoList MainWindow::getAllFilesRecursively(QDir* dir, QRegExp regexp_filte
         }else{
             // On teste le type MIME des fichiers pour savoir si on peut traiter le fichier ou non avec nos algorithmes
             QString mimetype = qmd.mimeTypeForFile(file).name();
-            if(mimetype.contains(QRegularExpression("(text/|image/|audio/)"))) {
+            if(mimetype.contains(QRegularExpression("(text/|image/|audio/|application/pdf)"))) {
                 res.append(file);
             }
         }
@@ -250,7 +268,11 @@ void MainWindow::on_filterButton_clicked()
                         if(!audio->isValue(regexp_filter)) {
                             files.removeAll(file);
                         }
-
+                    } else if(mimetype.contains(QRegularExpression("application/pdf"))) {
+                        PdfMetadata * pdf = new PdfMetadata(file.filePath());
+                        if(!pdf->regSearchVal(regexp_filter)) {
+                            files.removeAll(file);
+                        }
                     }
                 }
             }
@@ -314,9 +336,7 @@ void MainWindow::on_deleteBookmark_pushButton_clicked()
             ui->bookmarkSearchDirectory_label->setText("Répertoire : ");
             ui->bookmarkFilter_label->setText("Filtre de recherche : ");
 
-            ftm->destroyed();
-            ftm = new FileTreeModel(QList<QStringList>());
-            ui->file_treeView->setModel(ftm);
+            ui->file_treeWidget->clear();
         } else {
             QMessageBox::warning(this, "Erreur de suppression du bookmark", " Medium n'a pas réussi à supprimer votre bookmark : \n\"" %
                                   q->lastError().driverText() %
@@ -331,14 +351,6 @@ void MainWindow::on_deleteBookmark_pushButton_clicked()
                               q->lastError().databaseText() %
                               (q->lastError().nativeErrorCode().isEmpty() ? "" : " : " + q->lastError().nativeErrorCode()));
     }
-}
-
-void MainWindow::on_file_treeView_clicked(const QModelIndex &index)
-{
-    /*QStandardItemModel *qsim = (QStandardItemModel *) ui->file_treeView->model();
-    FileStandardItem *fsi =(FileStandardItem *) qsim->itemFromIndex(index);
-    qDebug() << fsi->getFilePath();*/
-    //ui->file_treeView->model()->itemFromIndex(index);
 }
 
 QRegExp MainWindow::buildSearchRegExp(QString search_filter){
@@ -437,4 +449,9 @@ QRegExp MainWindow::buildSearchRegExp(QString search_filter){
         QMessageBox::warning(this, "Erreur dans le parenthésage de votre filtre", " ')' (pos : " % QString::number(pos) % ") dans le filtre n'est associé à aucune ')'.");
         return QRegExp("--Invalid QRegExp because filter--");
     }
+}
+
+void MainWindow::on_file_treeWidget_clicked(const QModelIndex &index)
+{
+    FileTreeWidgetItem *ftwi = (FileTreeWidgetItem *) ui->file_treeWidget->currentItem();
 }

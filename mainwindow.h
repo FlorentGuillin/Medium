@@ -9,12 +9,13 @@
 #include <QtSql/QtSql>
 #include <QMessageBox>
 #include <QStringBuilder>
-#include "filetreemodel.h"
 #include <QTextStream>
 #include "ui_mainwindow.h"
 #include "bookmarklistwidgetitem.h"
 #include "imagemetadata.h"
 #include "audiometadata.h"
+#include "filetreewidgetitem.h"
+#include "pdfmetadata.h"
 
 namespace Ui {
 class MainWindow;
@@ -48,12 +49,11 @@ private slots:
 
     void on_deleteBookmark_pushButton_clicked();
 
-    void on_file_treeView_clicked(const QModelIndex &index);
+    void on_file_treeWidget_clicked(const QModelIndex &index);
 
 private:
     Ui::MainWindow *ui;
     QFileSystemModel *fs_model;
-    FileTreeModel *ftm;
     QDir *curr_dir;//le repertoire courant
     QSqlDatabase db; //lien vers la base SQLite
     QRegExp buildSearchRegExp(QString search_filter);
