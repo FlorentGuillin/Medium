@@ -29,7 +29,6 @@ public:
     bool isTitle(QRegExp reg);
     bool isDate(QRegExp reg);
     bool regSearchVal(QRegExp reg);
-    bool setPath(QString path);
 
     unsigned int searchRegText(QRegExp reg);
 

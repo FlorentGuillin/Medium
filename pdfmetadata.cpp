@@ -1,5 +1,6 @@
 #include "pdfmetadata.h"
 #include <stack>
+#include <iostream>
 
 using namespace PoDoFo;
 
@@ -10,7 +11,7 @@ PdfMetadata::PdfMetadata()
 PdfMetadata::PdfMetadata(QString path)
 {
     metadata = 0;
-
+    m_path = path;
     loadData(path);
 }
 PdfMetadata::~PdfMetadata()
@@ -118,21 +119,22 @@ bool PdfMetadata::regSearchVal(QRegExp reg)
 {
     return (isAuthor(reg) || isCreator(reg) || isKeywords(reg) || isSubjects(reg) || isTitle(reg) || isDate(reg));
 }
-bool PdfMetadata::setPath(QString path)
-{
-    m_path = path;
-}
-
 
 unsigned int PdfMetadata::searchRegText(QRegExp reg)
 {
     unsigned int occ_number = 0;
     bool is_text = false;
-    PdfMemDocument pdf_doc(m_path.toStdString().c_str());
+    PdfMemDocument *pdf_doc;
+    std::cerr<<m_path.toStdString().c_str()<<std::endl;
+    try{
+    pdf_doc= new PdfMemDocument (m_path.toStdString().c_str());
+}catch(PoDoFo::PdfError err){
+        std::cerr<<err.what()<<std::endl;
+    }
+    for (int curr_page = 0; curr_page < pdf_doc->GetPageCount(); ++curr_page) {
 
-    for (int curr_page = 0; curr_page < pdf_doc.GetPageCount(); ++curr_page) {
-
-        PoDoFo::PdfPage* pdf_page = pdf_doc.GetPage(curr_page);
+        std::cerr<<"pdfpage 1 "<<occ_number<<std::endl;
+        PoDoFo::PdfPage* pdf_page = pdf_doc->GetPage(curr_page);
 
         PoDoFo::PdfContentsTokenizer tok(pdf_page);
 
@@ -199,13 +201,13 @@ unsigned int PdfMetadata::searchRegText(QRegExp reg)
 
             }
             int curr_index= reg.indexIn(page_str);
-            int offset_pdf =0;
             while(curr_index !=-1 && curr_index != -2)
             {
-                offset_pdf++;
+                curr_index += reg.matchedLength();
+
                 occ_number++;
                 //std::cerr<<occ_number<<std::endl;
-                curr_index = reg.indexIn(page_str,offset_pdf);
+                curr_index = reg.indexIn(page_str,curr_index);
             }
             /*if(occ_number != 0)
                 std::cout<<occ_number<<std::endl;*/
