@@ -1,4 +1,6 @@
 #include "pdfmetadata.h"
+#include <stack>
+#include <iostream>
 
 using namespace PoDoFo;
 
@@ -9,7 +11,7 @@ PdfMetadata::PdfMetadata()
 PdfMetadata::PdfMetadata(QString path)
 {
     metadata = 0;
-
+    m_path = path;
     loadData(path);
 }
 PdfMetadata::~PdfMetadata()
@@ -116,4 +118,100 @@ bool PdfMetadata::isDate(QRegExp reg)
 bool PdfMetadata::regSearchVal(QRegExp reg)
 {
     return (isAuthor(reg) || isCreator(reg) || isKeywords(reg) || isSubjects(reg) || isTitle(reg) || isDate(reg));
+}
+
+unsigned int PdfMetadata::searchRegText(QRegExp reg)
+{
+    unsigned int occ_number = 0;
+    bool is_text = false;
+    PdfMemDocument *pdf_doc;
+    std::cerr<<m_path.toStdString().c_str()<<std::endl;
+    try{
+    pdf_doc= new PdfMemDocument (m_path.toStdString().c_str());
+}catch(PoDoFo::PdfError err){
+        std::cerr<<err.what()<<std::endl;
+    }
+    for (int curr_page = 0; curr_page < pdf_doc->GetPageCount(); ++curr_page) {
+
+        std::cerr<<"pdfpage 1 "<<occ_number<<std::endl;
+        PoDoFo::PdfPage* pdf_page = pdf_doc->GetPage(curr_page);
+
+        PoDoFo::PdfContentsTokenizer tok(pdf_page);
+
+        //ReadNext parameters
+        const char* token = 0;
+        PoDoFo::PdfVariant var;
+        PoDoFo::EPdfContentsType type;
+
+        std::stack<PdfVariant> stack;
+        QString page_str("");
+
+        while (tok.ReadNext(type, token, var)) {
+            if (type == PoDoFo::ePdfContentsType_Keyword) {
+                // process type, token & var
+                //std::cerr<<"PdfTextRegSearch : keyword "<<token<<std::endl;
+                if(strcmp(token,"BT") == 0)
+                {
+                    //debut du texte
+                    is_text = true;
+                }else if(strcmp(token,"ET") == 0)
+                {
+                    is_text = false;
+                }else if( strcmp( token, "l" ) == 0 ||
+                             strcmp( token, "m" ) == 0 )
+                {
+                     stack.pop();
+                     stack.pop();
+                }
+                if( is_text)
+                {
+                    if( strcmp( token, "Tf" ) == 0 )
+                    {
+                        stack.pop();
+                    }else if( strcmp( token, "Tj" ) == 0 ||
+                              strcmp( token, "'" ) == 0 )
+                     {
+
+                        page_str = page_str+ QString(stack.top().GetString().GetString());
+                         stack.pop();
+                     }else if(strcmp( token, "\"" ) == 0){
+                        page_str = page_str + QString(stack.top().GetString().GetString());
+                        stack.pop();
+                        stack.pop(); // remove char spacing from stack
+
+                        stack.pop(); // remove word spacing from stack
+                    }else if( strcmp( token, "TJ" ) == 0 )
+                    {
+                        PdfArray array = stack.top().GetArray();
+                        stack.pop();
+                        //QString word_qstr("");
+
+
+                        for( int i=0; i<static_cast<int>(array.GetSize()); i++ )
+                        {
+                            if( array[i].IsString() || array[i].IsHexString())
+                            {
+                                page_str = page_str + QString(array[i].GetString().GetString());
+                            }
+                        }
+                    }
+                }
+            }else if(type == PoDoFo::ePdfContentsType_Variant){
+                stack.push( var );
+
+            }
+            int curr_index= reg.indexIn(page_str);
+            while(curr_index !=-1 && curr_index != -2)
+            {
+                curr_index += reg.matchedLength();
+
+                occ_number++;
+                //std::cerr<<occ_number<<std::endl;
+                curr_index = reg.indexIn(page_str,curr_index);
+            }
+            /*if(occ_number != 0)
+                std::cout<<occ_number<<std::endl;*/
+        }
+    }
+    return occ_number;
 }

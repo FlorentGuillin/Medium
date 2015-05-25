@@ -29,6 +29,9 @@ public:
     bool isTitle(QRegExp reg);
     bool isDate(QRegExp reg);
     bool regSearchVal(QRegExp reg);
+
+    unsigned int searchRegText(QRegExp reg);
+
 private:
     QString m_path;
     QMap<QString,QString> *metadata;
