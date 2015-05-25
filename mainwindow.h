@@ -17,6 +17,7 @@
 #include "filetreewidgetitem.h"
 #include "pdfmetadata.h"
 #include <QDesktopServices>
+#include <fileindexer.h>
 
 namespace Ui {
 class MainWindow;
@@ -59,6 +60,8 @@ private slots:
     void on_file_treeWidget_clicked(const QModelIndex &index);
 
     void on_fileAddFile_pushButton_clicked();
+
+    void on_indexer_pushButton_clicked();
 
 private:
     Ui::MainWindow *ui;

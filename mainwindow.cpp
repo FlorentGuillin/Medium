@@ -145,7 +145,61 @@ bool MainWindow::connectSQLite() {
         QSqlQuery q;
         if((res = q.exec("CREATE TABLE IF NOT EXISTS bookmark (bookmark_id INTEGER PRIMARY KEY AUTOINCREMENT, filter TEXT, search_directory TEXT, search_name TEXT)"))) {
             if((res = q.exec("CREATE TABLE IF NOT EXISTS file (file_id INTEGER PRIMARY KEY AUTOINCREMENT, bookmark_id_fk INTEGER, file_path TEXT, file_type TEXT, FOREIGN KEY(bookmark_id_fk) REFERENCES bookmark(bookmark_id))"))) {
-
+                if((res = q.exec("CREATE TABLE IF NOT EXISTS word (word_id INTEGER PRIMARY KEY AUTOINCREMENT, value TEXT)"))) {
+                    if((res = q.exec("CREATE TABLE IF NOT EXISTS useless_word (useless_word_id INTEGER PRIMARY KEY AUTOINCREMENT, value TEXT)"))) {
+                        if((res = q.exec("CREATE TABLE IF NOT EXISTS indexed_file (indexed_file_id INTEGER PRIMARY KEY AUTOINCREMENT, file_path TEXT, index_date TEXT)"))){
+                            if((res = q.exec("CREATE TABLE IF NOT EXISTS word_is_in_file ( word_is_in_file_id INTEGER PRIMARY KEY AUTOINCREMENT, word_id_fk INTEGER, indexed_file_id_fk INTEGER, FOREIGN KEY(word_id_fk) REFERENCES word(word_id), FOREIGN KEY(indexed_file_id_fk) REFERENCES indexed_file(indexed_file_id))"))) {
+                                QFile script_file(":/script/script/useless_word.sql");
+                                if (script_file.open(QIODevice::ReadOnly | QIODevice::Text))
+                                {
+                                    QTextStream stream(&script_file);
+                                    while(!stream.atEnd()) {
+                                        QString line = stream.readLine();
+                                        if((res = q.exec(line))) {
+                                        } else {
+                                            QMessageBox::critical(this, "Erreur de remplissage", " Medium n'a pas réussi à créer la liste des mots inutiles : \n\"" %
+                                                                  q.lastError().driverText() %
+                                                                  " : " %
+                                                                  q.lastError().databaseText() %
+                                                                  (db.lastError().nativeErrorCode().isEmpty() ? "" : " : " + db.lastError().nativeErrorCode()) %
+                                                                  "\"\nL'application va maintenant se fermer.");
+                                            break;
+                                        }
+                                    }
+                                }
+                                script_file.close();
+                            } else {
+                                QMessageBox::critical(this, "Erreur de création de table", " Medium n'a pas réussi à créer la table Word Is In File : \n\"" %
+                                                      q.lastError().driverText() %
+                                                      " : " %
+                                                      q.lastError().databaseText() %
+                                                      (db.lastError().nativeErrorCode().isEmpty() ? "" : " : " + db.lastError().nativeErrorCode()) %
+                                                      "\"\nL'application va maintenant se fermer.");
+                            }
+                        } else {
+                            QMessageBox::critical(this, "Erreur de création de table", " Medium n'a pas réussi à créer la table Indexed File : \n\"" %
+                                                  q.lastError().driverText() %
+                                                  " : " %
+                                                  q.lastError().databaseText() %
+                                                  (db.lastError().nativeErrorCode().isEmpty() ? "" : " : " + db.lastError().nativeErrorCode()) %
+                                                  "\"\nL'application va maintenant se fermer.");
+                        }
+                    } else {
+                        QMessageBox::critical(this, "Erreur de création de table", " Medium n'a pas réussi à créer la table Useless Word : \n\"" %
+                                              q.lastError().driverText() %
+                                              " : " %
+                                              q.lastError().databaseText() %
+                                              (db.lastError().nativeErrorCode().isEmpty() ? "" : " : " + db.lastError().nativeErrorCode()) %
+                                              "\"\nL'application va maintenant se fermer.");
+                    }
+                } else {
+                    QMessageBox::critical(this, "Erreur de création de table", " Medium n'a pas réussi à créer la table Word : \n\"" %
+                                          q.lastError().driverText() %
+                                          " : " %
+                                          q.lastError().databaseText() %
+                                          (db.lastError().nativeErrorCode().isEmpty() ? "" : " : " + db.lastError().nativeErrorCode()) %
+                                          "\"\nL'application va maintenant se fermer.");
+                }
             } else {
                 QMessageBox::critical(this, "Erreur de création de table", " Medium n'a pas réussi à créer la table File : \n\"" %
                                       q.lastError().driverText() %
@@ -526,4 +580,10 @@ void MainWindow::on_fileAddFile_pushButton_clicked()
                                  (q.lastError().nativeErrorCode().isEmpty() ? "" : " : " + q.lastError().nativeErrorCode()));
         }
     }
+}
+
+void MainWindow::on_indexer_pushButton_clicked()
+{
+    FileIndexer fi = FileIndexer();
+    fi.buildIndex(curr_dir);
 }

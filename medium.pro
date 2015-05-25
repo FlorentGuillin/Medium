@@ -18,14 +18,16 @@ SOURCES += main.cpp\
     imagemetadata.cpp \
     audiometadata.cpp\
     pdfmetadata.cpp \
-    filetreewidgetitem.cpp
+    filetreewidgetitem.cpp \
+    fileindexer.cpp
 
 HEADERS  += mainwindow.h \
     bookmarklistwidgetitem.h \
     imagemetadata.h \
     audiometadata.h\
     pdfmetadata.h \
-    filetreewidgetitem.h
+    filetreewidgetitem.h \
+    fileindexer.h
 
 FORMS    += mainwindow.ui
 

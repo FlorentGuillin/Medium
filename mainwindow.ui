@@ -37,14 +37,21 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="1">
+      <item row="2" column="1">
        <widget class="QPushButton" name="parentDirButton">
         <property name="text">
          <string>Dossier parent</string>
         </property>
        </widget>
       </item>
-      <item row="1" column="0" rowspan="2">
+      <item row="1" column="1">
+       <widget class="QPushButton" name="indexer_pushButton">
+        <property name="text">
+         <string>Indexer</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0" rowspan="3">
        <widget class="QTreeView" name="fsTreeView"/>
       </item>
      </layout>
