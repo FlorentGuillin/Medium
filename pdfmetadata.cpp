@@ -65,7 +65,7 @@ bool PdfMetadata::regexSearchPerKey(QRegExp key_reg,QRegExp value_reg)
         if(value_reg.indexIn((*metadata)["Title"]) != -1)
             return true;
     if(key_reg.indexIn(QString("Date")) != -1 || key_reg.indexIn(QString("date"))!= -1)
-        if(value_reg.indexIn((*metadata)["date"]) != -1)
+        if(value_reg.indexIn((*metadata)["Date"]) != -1)
             return true;
 
     return false;
