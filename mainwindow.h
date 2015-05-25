@@ -16,6 +16,7 @@
 #include "audiometadata.h"
 #include "filetreewidgetitem.h"
 #include "pdfmetadata.h"
+#include <QDesktopServices>
 
 namespace Ui {
 class MainWindow;
@@ -49,7 +50,15 @@ private slots:
 
     void on_deleteBookmark_pushButton_clicked();
 
+    void on_open_filewidgetButton_clicked();
+
+    void on_file_treeWidget_doubleClicked(const QModelIndex &index);
+
+    void on_deleteFile_pushButton_clicked();
+
     void on_file_treeWidget_clicked(const QModelIndex &index);
+
+    void on_fileAddFile_pushButton_clicked();
 
 private:
     Ui::MainWindow *ui;

@@ -17,6 +17,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->fsTreeView->hideColumn(3);
     curr_dir = new QDir(QDir::homePath());
     ui->deleteBookmark_pushButton->setEnabled(false);
+    ui->deleteFile_pushButton->setEnabled(false);
+    ui->fileAddFile_pushButton->setEnabled(false);
     displayDir(QDir::homePath());
 
     ui->file_treeWidget->setColumnCount(2);
@@ -123,6 +125,8 @@ void MainWindow::displayFiles(int bookmark_id) {
                 treeItem->setIcon(1, pdf_icon);
             }
         }
+        for(int i = 0; i < 3; i++)
+            ui->file_treeWidget->resizeColumnToContents(i);
 
     } else {
         QMessageBox::warning(this, "Erreur de récupération des fichiers", " Medium n'a pas réussi à récupérer la liste des fichiers associés à votre bookmark : \n\"" %
@@ -315,11 +319,12 @@ void MainWindow::on_filterButton_clicked()
 void MainWindow::on_bookmark_listWidget_clicked(const QModelIndex &index)
 {
     BookmarkListWidgetItem *blwi = (BookmarkListWidgetItem *) ui->bookmark_listWidget->currentItem();
-    ui->bookmarkSearchName_label->setText("Nom du bookmark : " % blwi->getSearchName());
-    ui->bookmarkSearchDirectory_label->setToolTip(blwi->getSearchDirectory());
-    ui->bookmarkSearchDirectory_label->setText("Répertoire : " % QDir(blwi->getSearchDirectory()).dirName());
-    ui->bookmarkFilter_label->setText("Filtre de recherche : " % blwi->getFilter());
+    ui->bookmarkSearchNameValue_label->setText(blwi->getSearchName());
+    ui->bookmarkSearchDirectoryValue_label->setToolTip(blwi->getSearchDirectory());
+    ui->bookmarkSearchDirectoryValue_label->setText(QDir(blwi->getSearchDirectory()).dirName());
+    ui->bookmarkFilterValue_label->setText(blwi->getFilter());
     ui->deleteBookmark_pushButton->setEnabled(true);
+    ui->fileAddFile_pushButton->setEnabled(true);
     displayFiles(blwi->getBookmarkId());
 }
 
@@ -331,10 +336,11 @@ void MainWindow::on_deleteBookmark_pushButton_clicked()
         if(q->exec("DELETE FROM bookmark WHERE bookmark_id = '" % QString::number(blwi->getBookmarkId()) % "'")) {
             displayBookmarks();
             ui->deleteBookmark_pushButton->setEnabled(false);
-            ui->bookmarkSearchName_label->setText("Nom du bookmark : ");
+            ui->fileAddFile_pushButton->setEnabled(false);
+            ui->bookmarkSearchNameValue_label->setText("");
             ui->bookmarkSearchDirectory_label->setToolTip("");
-            ui->bookmarkSearchDirectory_label->setText("Répertoire : ");
-            ui->bookmarkFilter_label->setText("Filtre de recherche : ");
+            ui->bookmarkSearchDirectoryValue_label->setText("");
+            ui->bookmarkFilterValue_label->setText("");
 
             ui->file_treeWidget->clear();
         } else {
@@ -451,7 +457,73 @@ QRegExp MainWindow::buildSearchRegExp(QString search_filter){
     }
 }
 
-void MainWindow::on_file_treeWidget_clicked(const QModelIndex &index)
+void MainWindow::on_open_filewidgetButton_clicked()
 {
     FileTreeWidgetItem *ftwi = (FileTreeWidgetItem *) ui->file_treeWidget->currentItem();
+    ui->deleteFile_pushButton->setEnabled(true);
+    QDesktopServices::openUrl(QUrl("file://" + ftwi->getFilePath()));
+}
+
+void MainWindow::on_file_treeWidget_doubleClicked(const QModelIndex &index)
+{
+    on_open_filewidgetButton_clicked();
+}
+
+void MainWindow::on_deleteFile_pushButton_clicked()
+{
+    FileTreeWidgetItem *ftwi = (FileTreeWidgetItem *) ui->file_treeWidget->currentItem();
+    if(ftwi->getFileId() != QString("")){
+        QSqlQuery *q = new QSqlQuery(db);
+        if(q->exec("DELETE FROM file WHERE file_id = '" % ftwi->getFileId() % "'")) {
+            if(ui->file_treeWidget->topLevelItemCount() == 1) {
+                if(q->exec("DELETE FROM bookmark WHERE bookmark_id = '" % ftwi->getBookMarkIdFk() % "'")) {
+                    displayBookmarks();
+                    ui->file_treeWidget->clear();
+                    ui->fileAddFile_pushButton->setEnabled(false);
+                } else {
+                    QMessageBox::warning(this, "Erreur de suppression du bookmark", " Medium n'a pas réussi à supprimer votre bookmark : \n\"" %
+                                          q->lastError().driverText() %
+                                          " : " %
+                                          q->lastError().databaseText() %
+                                          (q->lastError().nativeErrorCode().isEmpty() ? "" : " : " + q->lastError().nativeErrorCode()));
+                }
+            } else {
+                displayFiles(ftwi->getBookMarkIdFk().toInt());
+            }
+            ui->deleteFile_pushButton->setEnabled(false);
+        } else {
+            QMessageBox::warning(this, "Erreur de suppression de fichier", " Medium n'a pas réussi à supprimer le fichier : \n\"" %
+                                  q->lastError().driverText() %
+                                  " : " %
+                                  q->lastError().databaseText() %
+                                  (q->lastError().nativeErrorCode().isEmpty() ? "" : " : " + q->lastError().nativeErrorCode()));
+        }
+    } else {
+        QMessageBox::information(this, "Impossible de supprimer ce fichier", "Medium ne peut pas supprimer le fichier sélectionné car il est relié à un dossier appartenant à votre bookmark");
+    }
+}
+
+void MainWindow::on_file_treeWidget_clicked(const QModelIndex &index)
+{
+    ui->deleteFile_pushButton->setEnabled(true);
+}
+
+void MainWindow::on_fileAddFile_pushButton_clicked()
+{
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Choisir Fichier"), QDir::homePath(), tr("*"));
+    if(fileName != "") {
+        QSqlQuery q;
+        BookmarkListWidgetItem *blwi = (BookmarkListWidgetItem *) ui->bookmark_listWidget->currentItem();
+        QMimeDatabase qmd;
+        QString file_type = qmd.mimeTypeForFile(QFileInfo(fileName)).name();
+        if(q.exec("INSERT INTO file (bookmark_id_fk, file_path, file_type) VALUES ( " % QString::number(blwi->getBookmarkId())  % ", \"" % fileName % "\", \"" % file_type % "\")")) {
+            displayFiles(blwi->getBookmarkId());
+        } else {
+            QMessageBox::warning(this, "Erreur avec la BDD lors de l'ajout d'un fichier", "Medium n'a pas réussi à ajouter votre fichier dans la base de donnée : \n\"" %
+                                 q.lastError().driverText() %
+                                 " : " %
+                                 q.lastError().databaseText() %
+                                 (q.lastError().nativeErrorCode().isEmpty() ? "" : " : " + q.lastError().nativeErrorCode()));
+        }
+    }
 }
