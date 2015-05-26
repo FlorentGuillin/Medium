@@ -125,15 +125,15 @@ unsigned int PdfMetadata::searchRegText(QRegExp reg)
     unsigned int occ_number = 0;
     bool is_text = false;
     PdfMemDocument *pdf_doc;
-    std::cerr<<m_path.toStdString().c_str()<<std::endl;
+
     try{
-    pdf_doc= new PdfMemDocument (m_path.toStdString().c_str());
-}catch(PoDoFo::PdfError err){
+        pdf_doc= new PdfMemDocument (m_path.toStdString().c_str());
+    }catch(PoDoFo::PdfError err){
         std::cerr<<err.what()<<std::endl;
     }
+
     for (int curr_page = 0; curr_page < pdf_doc->GetPageCount(); ++curr_page) {
 
-        std::cerr<<"pdfpage 1 "<<occ_number<<std::endl;
         PoDoFo::PdfPage* pdf_page = pdf_doc->GetPage(curr_page);
 
         PoDoFo::PdfContentsTokenizer tok(pdf_page);
@@ -148,14 +148,13 @@ unsigned int PdfMetadata::searchRegText(QRegExp reg)
 
         while (tok.ReadNext(type, token, var)) {
             if (type == PoDoFo::ePdfContentsType_Keyword) {
-                // process type, token & var
-                //std::cerr<<"PdfTextRegSearch : keyword "<<token<<std::endl;
                 if(strcmp(token,"BT") == 0)
                 {
                     //debut du texte
                     is_text = true;
                 }else if(strcmp(token,"ET") == 0)
                 {
+                    //fin de texte
                     is_text = false;
                 }else if( strcmp( token, "l" ) == 0 ||
                              strcmp( token, "m" ) == 0 )
@@ -200,17 +199,19 @@ unsigned int PdfMetadata::searchRegText(QRegExp reg)
                 stack.push( var );
 
             }
-            int curr_index= reg.indexIn(page_str);
-            while(curr_index !=-1 && curr_index != -2)
-            {
-                curr_index += reg.matchedLength();
 
-                occ_number++;
-                //std::cerr<<occ_number<<std::endl;
-                curr_index = reg.indexIn(page_str,curr_index);
-            }
             /*if(occ_number != 0)
                 std::cout<<occ_number<<std::endl;*/
+        }
+        int curr_index= reg.indexIn(page_str);
+
+        while(curr_index !=-1 && curr_index != -2)
+        {
+            curr_index += reg.matchedLength();
+
+            occ_number++;
+            std::cerr<<occ_number<<std::endl;
+            curr_index = reg.indexIn(page_str,curr_index);
         }
     }
     return occ_number;
