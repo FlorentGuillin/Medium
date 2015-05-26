@@ -210,7 +210,6 @@ unsigned int PdfMetadata::searchRegText(QRegExp reg)
             curr_index += reg.matchedLength();
 
             occ_number++;
-            std::cerr<<occ_number<<std::endl;
             curr_index = reg.indexIn(page_str,curr_index);
         }
     }
