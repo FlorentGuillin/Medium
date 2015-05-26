@@ -331,3 +331,33 @@ bool ImageMetadata::regexHasValue(QRegExp regex) {
 
         return ret_value;
 }
+
+QStringList ImageMetadata::getMetadata() {
+    QStringList res = QStringList();
+
+    if(has_edata) {
+        for(QMap<QString,QString>::iterator it = ex_mdata_map->begin();
+            it != ex_mdata_map->end();
+            it++)
+        {
+            res.append(it.value());
+        }
+    }
+    if(has_idata) {
+        for(QMap<QString,QString>::iterator it = ip_mdata_map->begin();
+            it != ip_mdata_map->end();
+            it++)
+        {
+            res.append(it.value());
+        }
+    }
+    if(has_xdata) {
+        for(QMap<QString,QString>::iterator it = xm_mdata_map->begin();
+            it != xm_mdata_map->end();
+            it++)
+        {
+            res.append(it.value());
+        }
+    }
+    return res;
+}

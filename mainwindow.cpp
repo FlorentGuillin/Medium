@@ -328,7 +328,7 @@ void MainWindow::on_filterButton_clicked()
                         }
                     } else if(mimetype.contains(QRegularExpression("application/pdf"))) {
                         PdfMetadata * pdf = new PdfMetadata(file.filePath());
-                        if(!pdf->regSearchVal(regexp_filter)) {
+                        if(!pdf->regSearchVal(regexp_filter) && pdf->searchRegText(regexp_filter) == 0) {
                             files.removeAll(file);
                         }
                     }

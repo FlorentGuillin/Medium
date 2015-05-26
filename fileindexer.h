@@ -20,7 +20,7 @@ public:
     QStringList loadTextContent(QString file_path, QStringList useless_words);
     QStringList loadAudioContent(QString file_path, QStringList useless_words);
     QStringList loadImageContent(QString file_path, QStringList useless_words);
-    QStringList loadPDFContent(QString file_path, QStringList useless_words);
+    QStringList loadPdfContent(QString file_path, QStringList useless_words);
     QString removeAccentsAndToLower(QString string);
     QString removePunctuation(QString string);
 };

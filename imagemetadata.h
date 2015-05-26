@@ -22,6 +22,7 @@ public:
     bool regexHasValue(QRegExp regex);
     QMap<QString,QString>* regexSearchKey(QRegExp regex);
     QMap<QString,QString>* regexSearchValue(QRegExp regex);
+    QStringList getMetadata();
 
 private:
     QString m_path;

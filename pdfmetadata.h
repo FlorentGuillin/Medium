@@ -31,6 +31,7 @@ public:
     bool regSearchVal(QRegExp reg);
 
     unsigned int searchRegText(QRegExp reg);
+    QStringList getCutText();
 
 private:
     QString m_path;

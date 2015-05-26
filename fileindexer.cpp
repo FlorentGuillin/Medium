@@ -46,9 +46,9 @@ void FileIndexer::buildIndex(QDir *dir) {
                         if(file_type.contains(QRegExp("text/"))) {
                             file_content = loadTextContent(file_path, useless_words);
                         } else if (file_type.contains(QRegExp("audio/"))){
-                            //file_content = loadAudioContent(file_path, useless_words);
+                            file_content = loadAudioContent(file_path, useless_words);
                         } else if (file_type.contains(QRegExp("image/"))) {
-                            //file_content = loadImageContent(file_path, useless_words);
+                            file_content = loadImageContent(file_path, useless_words);
                         } else if (file_type.contains(QRegExp("application/pdf"))) {
                             //file_content = loadPdfContent(file_path, useless_words);
                         } else if (file_type.contains(QRegExp("inode/directory"))) {
@@ -178,7 +178,6 @@ QStringList FileIndexer::loadTextContent(QString file_path, QStringList useless_
             QString line = stream.readLine();
             line = removePunctuation(line);
             line = removeAccentsAndToLower(line);
-            qDebug() << line;
             res = line.split(" ");
             res.removeAll("");
             foreach(QString word, res) {
@@ -194,16 +193,46 @@ QStringList FileIndexer::loadTextContent(QString file_path, QStringList useless_
 
 QStringList FileIndexer::loadAudioContent(QString file_path, QStringList useless_words) {
     QStringList res = QStringList();
+    AudioMetadata am = AudioMetadata(file_path);
+    res.append(removeAccentsAndToLower(removePunctuation(am.getAlbum())).split(" "));
+    res.append(removeAccentsAndToLower(removePunctuation(am.getArtist())).split(" "));
+    res.append(removeAccentsAndToLower(removePunctuation(am.getGenre())).split(" "));
+    res.append(removeAccentsAndToLower(removePunctuation(am.getTitle())).split(" "));
+    res.append(removeAccentsAndToLower(removePunctuation(QString::number(am.getYear()))).split(" "));
+    foreach(QString word, res) {
+        if(useless_words.contains(word)) {
+            res.removeAll(word);
+        }
+    }
     return res;
 }
 
 QStringList FileIndexer::loadImageContent(QString file_path, QStringList useless_words) {
+    ImageMetadata im = ImageMetadata(file_path);
+    QStringList meta = QStringList(im.getMetadata());
     QStringList res = QStringList();
+    foreach (QString line, meta) {
+        line = removePunctuation(line);
+        line = removeAccentsAndToLower(line);
+        qDebug() << line;
+        res = line.split(" ");
+        res.removeAll("");
+        foreach(QString word, res) {
+            if(useless_words.contains(word)) {
+                res.removeAll(word);
+            }
+        }
+    }
     return res;
 }
 
-QStringList FileIndexer::loadPDFContent(QString file_path, QStringList useless_words) {
-    QStringList res = QStringList();
+QStringList FileIndexer::loadPdfContent(QString file_path, QStringList useless_words) {
+    PdfMetadata pdfm = PdfMetadata(file_path);
+    QStringList res = pdfm.getCutText();
+    foreach(QString line, res) {
+        qDebug() << line;
+    }
+    res = QStringList();
     return res;
 }
 
