@@ -15,6 +15,7 @@ Fonctionnalités:
   - les images (MimeType: image/*) sont analysés (metadonnées - lib: Exiv2)
   - les fichiers audios (MimeType: audio/*) sont analysés (métadonnées - lib: taglib) 
   - les PDF (MimeType: application/pdf) sont analysés (métadonnées + contenu - lib: PoDoFo)
+
 Il n'est pas garanti qu'une des librairies n'échoue pas à lire un fichier dans certains cas.
 Les résultats sont affichés sous forme de marques-pages. On peut les supprimer, et on peut y ajouter des fichiers ou en supprimer (au niveau de la fenêtre de visualisation des fichiers, partie basse de l'interface).
 
