@@ -2,25 +2,30 @@ Medium - file indexer
 
 Langage: C++ / Qt
 
-Gestion des tickets via Trello: https://trello.com/b/8Kfkl8Xw/medium-file-indexer
-
 Base du projet: Un explorateur de fichiers (Indexation / Création de dossiers virtuels)
+
+Installation: Compilation depuis QtCreator fonctionnelle, les librairies exiv2 et taglib ne devraient pas poser de problèmes. Podofo a été compilé via gcc en version //TODO, retrouver le num de version //
 
 Fonctionnalités:
 
-Recherche et classement par:
+-Sélection d'un dossier comme répertoire de recherche (ou d'indexation)
 
-1) Import de fichiers / Choix de racine(s) (-Récupération des fichiers du système dans une BDD et faire les mises à jours à l'aide d'un daemon)
+-Le filtrage se fait à partir du dossier courant et de manière récursive: 
+  - les fichiers textes (MimeType: text/*) sont analysés (contenu)
+  - les images (MimeType: image/*) sont analysés (metadonnées - lib: Exiv2)
+  - les fichiers audios (MimeType: audio/*) sont analysés (métadonnées - lib: taglib) 
+  - les PDF (MimeType: application/pdf) sont analysés (métadonnées + contenu - lib: PoDoFo)
+Il n'est pas garanti qu'une des librairies n'échoue pas à lire un fichier dans certains cas.
+Les résultats sont affichés sous forme de marques-pages. On peut les supprimer, et on peut y ajouter des fichiers ou en supprimer (au niveau de la fenêtre de visualisation des fichiers, partie basse de l'interface).
 
-2) Classification par date
+Il est possible d'effectuer une recherche multicritère (case insensitive) à l'aide des opérateurs -AND- et -OR- (logique booléenne).
+Une expression régulière est construite en fonction.
+Exemples: 
+stras -OR- bourg => (stras|bourg)
+stras -AND- bourg => (?=.*stras)(?=.*bourg)
+bonjour -OR- (medium -AND- strasbourg) => (bonjour|(?=.*medium)(?=.*strasbourg))
+bonjour -OR- medium -AND- strasbourg => (?=.*(bonjour|medium))(?=.*strasbourg)
 
-3) Géolocalisation 
+Il est possible de lancer une indexation textuelle (voir FileIndexer.cpp) depuis un répertoire courant (résultat visible dans medium.db (créé via SQLite3) cependant, la recherche n'a pas été relié à l'indexation (nécessite encore des améliorations). 
 
-4) Métadonnées
-
-5) Thèmes: 
-  
--Recherche par tags / Création des tags, récupération sur le net (ou déjà existant sur certains types de fichier)
--Analyse des similarités.
-
-6) Analyse des fichiers musicaux (Essentia) -> suggestion "vous pourriez aimer"(LastFM)
+Gestion des tickets via Trello: https://trello.com/b/8Kfkl8Xw/medium-file-indexer (non maintenu)
