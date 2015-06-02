@@ -22,10 +22,10 @@ Les résultats sont affichés sous forme de marques-pages. On peut les supprimer
 Il est possible d'effectuer une recherche multicritère (case insensitive) à l'aide des opérateurs -AND- et -OR- (logique booléenne).
 Une expression régulière est construite en fonction.
 Exemples: 
-stras -OR- bourg => (stras|bourg)
-stras -AND- bourg => (?=.*stras)(?=.*bourg)
-bonjour -OR- (medium -AND- strasbourg) => (bonjour|(?=.*medium)(?=.*strasbourg))
-bonjour -OR- medium -AND- strasbourg => (?=.*(bonjour|medium))(?=.*strasbourg)
+- stras -OR- bourg => (stras|bourg)
+- stras -AND- bourg => (?=.*stras)(?=.*bourg)
+- bonjour -OR- (medium -AND- strasbourg) => (bonjour|(?=.*medium)(?=.*strasbourg))
+- bonjour -OR- medium -AND- strasbourg => (?=.*(bonjour|medium))(?=.*strasbourg)
 
 Il est possible de lancer une indexation textuelle (voir FileIndexer.cpp) depuis un répertoire courant (résultat visible dans medium.db (créé via SQLite3) cependant, la recherche n'a pas été relié à l'indexation (nécessite encore des améliorations). 
 
