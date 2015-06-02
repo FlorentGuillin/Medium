@@ -4,7 +4,7 @@ Langage: C++ / Qt
 
 Base du projet: Un explorateur de fichiers (Indexation / Création de dossiers virtuels)
 
-Installation: Compilation depuis QtCreator fonctionnelle, les librairies exiv2 et taglib ne devraient pas poser de problèmes. Podofo a été compilé via gcc en version //TODO, retrouver le num de version //
+Installation: Compilation depuis QtCreator fonctionnelle, les librairies exiv2 et taglib ne devraient pas poser de problèmes. Podofo a été compilé via gcc en version 4.9.2
 
 Fonctionnalités:
 
